@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>itch.xport</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+:root {
+    --primary: #00ff88;
+    --background: #000000;
+    --surface: #333;
+  }
+    body {
+      font-family: 'Roboto', sans-serif;
+      margin: 0;
+      padding: 12px;
+      background: var(--background);
+      color: #ffffff;
+      min-height: 100vh;
+    }
+    .container {
+      max-width: 100%;
+      margin: 0 auto;
+    }
+    .section {
+      background: #000;
+      border: 2px solid var(--surface);
+      padding: 16px;
+      border-radius: 8px;
+      margin: 8px 0;
+    }
+    .input-group {
+      margin: 12px 0;
+    }
+    input, textarea, button, select {
+      width: 100%;
+      padding: 12px;
+      margin: 6px 0;
+      border: 2px solid var(--surface);
+      border-radius: 5px;
+      box-sizing: border-box;
+      background: #000;
+      color: #fff;
+    }
+    button {
+      background: #fff !important;
+      color: #000 !important;
+      border: none;
+      font-weight: bold;
+      cursor: pointer;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+      transition: all 0.2s;
+      border: 2px solid #0000;
+      border-radius: 5px;
+    }
+    button.pressed, button:active {
+      opacity: 0.8;
+      transform: scale(0.99);
+      background: #aaa !important;
+      color: #333 !important;
+      border: 2px solid #eee9;
+    }
+    button.danger {
+      background: #ff4444 !important;
+      color: white !important;
+    }
+    .progress-container {
+      width: 100%;
+      background-color: #333;
+      border-radius: 4px;
+      margin: 8px 0;
+    }
+    .progress-bar {
+      height: 8px;
+      border-radius: 4px;
+      background-color: var(--primary);
+      width: 0%;
+      transition: width 0.3s;
+    }
+    #status {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: #000;
+      color: var(--primary);
+      padding: 12px;
+      font-family: monospace;
+      border-top: 1px solid #333;
+    }
+    .game-list {
+      font-family: monospace;
+      max-height: 300px;
+      overflow-y: auto;
+      border: 2px solid var(--surface);
+      border-radius: 8px;
+      padding: 8px;
+      margin: 8px 0;
+      background: #000;
+    }
+    .game-item {
+      padding: 8px;
+      border-bottom: 1px solid #333;
+      transition: all 0.3s;
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.85em;
+    }
+    .game-item:last-child {
+      border-bottom: none;
+    }
+    .game-success {
+      color: var(--primary);
+      border-left: 3px solid var(--primary);
+    }
+    .game-error {
+      color: #ff4444;
+      border-left: 3px solid #ff4444;
+    }
+    .game-title {
+      flex-grow: 1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-right: 10px;
+    }
+    .game-status {
+      font-weight: bold;
+      min-width: 60px;
+      text-align: right;
+    }
+    .stats {
+      display: flex;
+      justify-content: space-between;
+      margin: 8px 0;
+      font-size: 0.5em;
+    }
+    .stats span {
+      padding: 5px 8px;
+      border-radius: 40px;
+      background: #333;
+    }
+    .chart-container {
+      height: 200px;
+      margin: 8px 0;
+      background: #000;
+      border: 2px solid var(--surface);
+      border-radius: 8px;
+      padding: 8px;
+    }
+    .controls {
+      display: flex;
+      gap: 8px;
+      margin: 8px 0;
+    }
+    .controls button {
+      flex: 1;
+    }
+    .help-text {
+      color: #666;
+      font-size: 0.9em;
+      margin: 8px 0;
+    }
+    .speed-control {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 8px 0;
+    }
+    .speed-control input {
+      flex: 1;
+    }
+    .speed-control label {
+      min-width: 120px;
+    }
+    h2 span {
+      color: var(--primary);
+    }
+    summary {
+      cursor: pointer;
+      color: var(--primary);
+      margin: 10px 0;
+    }
+    pre {
+      background: #111;
+      padding: 10px;
+      border-radius: 5px;
+      overflow-x: auto;
+      max-height: 300px;
+    }
+    .json-output {
+      margin-top: 20px;
+      border: 1px solid var(--surface);
+      padding: 10px;
+      border-radius: 5px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="section">
+      <h2>itch<span>.</span>xport</h2>
+
+      <div class="input-group">
+        <label for="apiKey">Enter URL or API key:</label>
+        <input type="text" id="apiKey" placeholder="Enter your itch.io API key">
+        <div class="help-text">
+          Enter homepage URL (leafo.itch.io) or game URLs or your itch.io API key.
+        </div>
+      </div>
+
+      <div class="speed-control">
+        <label for="concurrency">Max concurrent requests:</label>
+        <input type="number" id="concurrency" min="1" max="50" value="5">
+      </div>
+
+      <div class="controls">
+        <button id="fetchButton">Fetch Game Data</button>
+        <button id="cancelButton" class="danger" disabled>Cancel</button>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="progress-container">
+        <div class="progress-bar" id="progressBar"></div>
+      </div>
+      <div class="stats" id="stats">
+        <span id="successCount">Success: 0</span>
+        <span id="errorCount">Failed: 0</span>
+        <span id="remainingCount">Remaining: 0</span>
+        <span id="speed">Speed: 0/s</span>
+      </div>
+
+      <div class="chart-container" id="chartContainer">
+        <canvas id="progressChart"></canvas>
+      </div>
+
+      <div class="game-list" id="gameList"></div>
+    </div>
+
+    <div id="jsonOutput" class="json-output" style="display:none">
+      <summary>Exported Game Data (JSON)</summary>
+      <pre id="jsonContent"></pre>
+      <button onclick="copyJson()">Copy to Clipboard</button>
+    </div>
+
+    <details>
+      <summary>About & Data Format</summary>
+      <p>
+        This tool exports your Itch.io games with full metadata including descriptions, screenshots and videos.
+      </p>
+      <p>
+        Each game includes:
+      </p>
+      <ul>
+        <li>Title, description and metadata</li>
+        <li>Cover image and screenshots</li>
+        <li>Embedded YouTube videos</li>
+        <li>Platform information</li>
+        <li>Release dates and update timestamps</li>
+      </ul>
+      <p>
+        Example game format:
+      </p>
+      <pre>{
+        "title": "Game Title",
+        "url": "https://game.itch.io",
+        "cover_url": "https://image.url",
+        "description": "Markdown formatted description",
+        "screenshots": ["url1", "url2"],
+        "videos": [{"url": "youtube.com/embed/id", "thumb": "thumbnail.jpg"}],
+        "platforms": [{"name": "Windows", "url": "download.url"}],
+        "released": "YYYY-MM-DDTHH:MM:SS.000Z",
+        "updated": "YYYY-MM-DDTHH:MM:SS.000Z"
+        }</pre>
+      <p>
+        Made by Alimad Corporations
+      </p>
+    </details>
+  </div>
+
+  <div id="status">
+    Ready
+  </div>
+
+  <script>
+    const fetchButton = document.getElementById('fetchButton');
+    const cancelButton = document.getElementById('cancelButton');
+    const apiKeyInput = document.getElementById('apiKey');
+    const concurrencyInput = document.getElementById('concurrency');
+    const progressBar = document.getElementById('progressBar');
+    const gameList = document.getElementById('gameList');
+    const successCount = document.getElementById('successCount');
+    const errorCount = document.getElementById('errorCount');
+    const remainingCount = document.getElementById('remainingCount');
+    const speedDisplay = document.getElementById('speed');
+    const chartContainer = document.getElementById('chartContainer');
+    const statusElement = document.getElementById('status');
+    const jsonOutput = document.getElementById('jsonOutput');
+    const jsonContent = document.getElementById('jsonContent');
+
+    let progressChart;
+    let success = 0;
+    let errors = 0;
+    let remaining = 0;
+    let processedCount = 0;
+    let startTime = 0;
+    let processing = false;
+    let cancelRequested = false;
+    let activeRequests = 0;
+    let lastRequestTime = 0;
+    let speeds = [];
+    const speedHistoryLength = 5;
+
+    apiKeyInput.value = localStorage.getItem("kapi") || "";
+    fetchButton.addEventListener('click', startFetching);
+    cancelButton.addEventListener('click', () => {
+      cancelRequested = true;
+      cancelButton.disabled = true;
+      statusElement.textContent = 'Cancellation requested...';
+    });
+
+    function initializeChart() {
+      const ctx = document.getElementById('progressChart').getContext('2d');
+      progressChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: [],
+          datasets: [{
+            label: 'Processing Speed',
+            data: [],
+            borderColor: 'rgba(0, 255, 136, 1)',
+            backgroundColor: 'rgba(0, 255, 136, 0.2)',
+            tension: 0.1,
+            fill: true
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          animation: {
+            duration: 200
+          },
+          plugins: {
+            legend: {
+              labels: {
+                color: '#fff'
+              }
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              suggestedMin: 0,
+              suggestedMax: 50,
+              title: {
+                display: true, text: 'Games/s', color: '#fff'
+              },
+              grid: {
+                color: 'rgba(255, 255, 255, 0.1)'
+              },
+              ticks: {
+                color: '#fff', stepSize: 1
+              }
+            },
+            x: {
+              title: {
+                display: true, text: 'Time', color: '#fff'
+              },
+              grid: {
+                color: 'rgba(255, 255, 255, 0.1)'
+              },
+              ticks: {
+                color: '#fff'
+              }
+            }
+          }
+        }
+      });
+    }
+
+    function updateChart(speed) {
+      if (!progressChart) return;
+      const now = new Date();
+      const timeLabel = now.getMinutes() + ':' + now.getSeconds().toString().padStart(2, '0');
+      progressChart.data.labels.push(timeLabel);
+      progressChart.data.datasets[0].data.push(speed);
+      if (progressChart.data.labels.length > 50) {
+        progressChart.data.labels.shift();
+        progressChart.data.datasets[0].data.shift();
+      }
+      const currentMax = Math.max(...progressChart.data.datasets[0].data);
+      progressChart.options.scales.y.suggestedMax = Math.max(10, currentMax * 1.2);
+      progressChart.update();
+    }
+
+    function updateStats() {
+      successCount.textContent = `Success: ${success}`;
+      errorCount.textContent = `Failed: ${errors}`;
+      remainingCount.textContent = `Remaining: ${remaining}`;
+      const elapsed = (Date.now() - startTime) / 1000;
+      const currentSpeed = elapsed > 0 ? (processedCount / elapsed).toFixed(2): 0;
+      speeds.push(currentSpeed);
+      if (speeds.length > speedHistoryLength) speeds.shift();
+      const avgSpeed = (speeds.reduce((a, b) => a + parseFloat(b), 0) / speeds.length).toFixed(2);
+      speedDisplay.textContent = `Speed: ${avgSpeed}/s`;
+      updateChart(parseFloat(avgSpeed));
+    }
+
+    function updateProgressBar(processed, total) {
+      const percent = Math.round((processed / total) * 100);
+      progressBar.style.width = `${percent}%`;
+      statusElement.textContent = `Processed ${processed} of ${total} (${percent}%) | Active: ${activeRequests}`;
+    }
+
+    function copyJson() {
+      navigator.clipboard.writeText(jsonContent.textContent);
+      statusElement.textContent = 'JSON copied to clipboard!';
+    }
+
+
+    async function startFetching() {
+      const apiKey = apiKeyInput.value.trim();
+      if (!apiKey) {
+        statusElement.textContent = 'Please enter your itch.io API key';
+        return;
+      }
+      localStorage.setItem("kapi", apiKey);
+
+      const maxConcurrent = Math.min(50, Math.max(1, parseInt(concurrencyInput.value) || 5));
+
+      try {
+        success = 0;
+        errors = 0;
+        processedCount = 0;
+        speeds = [];
+        cancelRequested = false;
+        processing = true;
+        activeRequests = 0;
+        lastRequestTime = 0;
+
+        fetchButton.disabled = true;
+        cancelButton.disabled = false;
+        statusElement.textContent = 'Fetching game data...';
+        jsonOutput.style.display = 'none';
+
+        if (!progressChart) initializeChart();
+        else {
+          progressChart.data.labels = [];
+          progressChart.data.datasets[0].data = [];
+          progressChart.update();
+        }
+
+        const games = await fetchGames(apiKey);
+        if (games.length === 0) {
+          statusElement.textContent = 'No games found with this API key';
+          return;
+        }
+        for (let i = 0; i < games.length; i++) {
+          games[i].url = games[i].url.replace(".itch.io.itch.io", ".itch.io")
+        }
+        gameList.innerHTML = '';
+        remaining = games.length;
+        startTime = Date.now();
+        updateStats();
+
+        games.forEach((game, index) => {
+          const gameItem = document.createElement('div');
+          gameItem.className = 'game-item';
+          gameItem.innerHTML = `<span class="game-title">${index + 1}. ${game.title}</span><span class="game-status">Pending</span>`;
+          gameItem.dataset.id = index;
+          gameList.appendChild(gameItem);
+        });
+
+        const processedGames = await processGames(games, maxConcurrent);
+
+        if (cancelRequested) {
+          statusElement.textContent = `Processing cancelled. ${success} games processed successfully (${errors} failed).`;
+        } else {
+          const jsonData = JSON.stringify(processedGames, null, 2);
+          jsonContent.textContent = jsonData;
+          jsonOutput.style.display = 'block';
+
+          const blob = new Blob([jsonData], {
+            type: "application/json"
+          });
+          const a = document.createElement("a");
+          a.href = URL.createObjectURL(blob);
+          a.download = "games_data.json";
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+
+          statusElement.textContent = `Successfully processed ${success} games (${errors} failed). JSON file downloaded.`;
+        }
+      } catch (error) {
+        console.error('Error:', error);
+        statusElement.textContent = `Error: ${error.message}`;
+      } finally {
+        fetchButton.disabled = false;
+        cancelButton.disabled = true;
+        processing = false;
+        updateStats();
+      }
+    }
+
+    async function fetchGames(apiKey) {
+      try {
+        if (apiKey.split("itch.io").length > 1) {
+          let r = await parseGameUrls(apiKey);
+          console.log(r);
+          return r;
+        }
+        statusElement.textContent = 'Fetching your games from itch.io...';
+        const response = await fetch(`https://proxymad.vercel.app/api/proxy?url=https://itch.io/api/1/${apiKey}/my-games`);
+        if (!response.ok) {
+          try {
+            const errorBody = await response.json();
+            if (errorBody && errorBody.status) throw new Error(errorBody.status);
+          } catch (e) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+          }
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        const data = await response.json();
+        if (!data.games) throw new Error('No games found or invalid API key.');
+        return data.games;
+      } catch (error) {
+        throw new Error(`Failed to load games: ${error.message}`);
+      }
+    }
+    async function parseGameUrls(input) {
+      input = input.trim();
+      if (!input) return [];
+      input = input.replace(/^https?:\/\//, '');
+      if (input.includes('/')) {
+        const gameSlug = input.split('/')[1];
+        const username = input.split('/')[0];
+        return [{
+          title: gameSlug,
+          url: `https://${username}.itch.io/${gameSlug}`
+        }];
+      }
+      if (input.includes(',')) {
+        const username = input.split('.itch.io')[0] || 'leafo';
+        const slugs = input.includes('itch.io/') ?
+        input.split('itch.io/')[1].split(','):
+        input.split(',');
+
+        return slugs.map(slug => ({
+          title: slug.trim(),
+          url: `https://${username}.itch.io/${slug.trim()}`
+        }));
+      }
+      try {
+        const response = await fetch(`https://madfetch.vercel.app/html/${input}`);
+        if (!response.ok) throw new Error('Failed to fetch user page');
+
+        const html = await response.json();
+        const doc = new DOMParser().parseFromString(html.body, 'text/html');
+
+        const gameLinks = Array.from(doc.querySelector(".game_column").querySelectorAll('.title.game_link'));
+
+        return gameLinks.map(link => ({
+          title: link.innerHTML,
+          url: link.href
+        }));
+      } catch (error) {
+        console.error('Error scraping game links:',
+          error);
+        return [];
+      }
+    }
+    async function fetchWithRetry(url, retries = 3) {
+      for (let attempt = 1; attempt <= retries; attempt++) {
+        try {
+          let response = await fetch(url);
+          if (!response.ok) {
+            try {
+              const errorBody = await response.json();
+              if (errorBody && errorBody.status) throw new Error(errorBody.status);
+            } catch (e) {
+              throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+          }
+          let r = await response.json();
+          localStorage.setItem("tyw"+url, JSON.stringify(r.body));
+          return r;
+        } catch (error) {
+          console.warn(`Attempt ${attempt} failed for ${url}:`, error);
+          if (attempt === retries) throw error;
+          await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+        }
+      }
+    }
+
+    async function extractEmbeds(html) {
+      let prs = new DOMParser().parseFromString(html, "text/html");
+      let r = [];
+      let iframes = Array.from(prs.querySelectorAll("iframe"));
+      let promises = iframes.map(async (iframe) => {
+        const src = iframe.getAttribute("src");
+        if (src && src.includes("youtube.com/embed/")) {
+          const match = src.match(/youtube\.com\/embed\/([^?&]+)/);
+          if (match) {
+            let url = `https://www.youtube.com/embed/${match[1]}`;
+            let baseThumb = `https://img.youtube.com/vi/${match[1]}/`;
+            let thumb = await getFirstWorkingThumbnail(baseThumb);
+            r.push({
+              url, thumb
+            });
+          }
+        }
+      });
+      await Promise.all(promises);
+      return r;
+    }
+
+    async function getFirstWorkingThumbnail(baseUrl) {
+      const thumbnailTypes = ["maxresdefault.jpg", "sddefault.jpg", "hqdefault.jpg", "mqdefault.jpg", "default.jpg", "0.jpg"];
+      for (const type of thumbnailTypes) {
+        try {
+          const exists = await new Promise((resolve, reject) => {
+            const img = new Image();
+            const timeout = setTimeout(() => {
+              img.onload = img.onerror = null; reject();
+            }, 2000);
+            img.onload = () => {
+              clearTimeout(timeout); resolve(true);
+            };
+            img.onerror = () => {
+              clearTimeout(timeout); resolve(false);
+            };
+            img.src = `${baseUrl}${type}`;
+          });
+          if (exists) return `${baseUrl}${type}`;
+        } catch {}
+      }
+      return `${baseUrl}mqdefault.jpg`;
+    }
+
+    async function processGame(game, index, totalGames) {
+      const gameItem = document.querySelector(`.game-item[data-id="${index}"]`);
+      const statusElement = gameItem.querySelector('.game-status');
+
+      try {
+        statusElement.textContent = 'Processing...';
+        let htmlData = await fetchWithRetry("https://madfetch.vercel.app/html/" + game.url.split("://")[1]);
+        let html = htmlData.body;
+        let parsed = new DOMParser().parseFromString(html, "text/html");
+        let container = parsed.querySelector("#wrapper .view_game_page .columns");
+        if (!container) throw new Error("Game page structure not found");
+
+        let newForm = {
+          ...game,
+          title: parsed.title,
+          id: "G" + (index + 100).toString(),
+          pid: "G" + index.toString().padStart(4, "0"),
+          //released: formatDate(game.created_at),
+          //updated: formatDate(game.published_at),
+          description: htmlToMarkdown(container.querySelector(".user_formatted")?.innerHTML || ""),
+          videos: await extractEmbeds(html),
+          screenshots: [...container.querySelectorAll(".screenshot_list a")].map((a) => a.href),
+          banner: game.cover_url,
+          platforms: [{
+            url: game.url
+          }]
+        };
+
+        gameItem.classList.add('game-success');
+        statusElement.textContent = 'Success';
+        success++;
+        remaining--;
+        processedCount++;
+        updateStats();
+        return newForm;
+      } catch (error) {
+        console.error(`Error processing game ${game.title}:`, error);
+        gameItem.classList.add('game-error');
+        statusElement.textContent = 'Failed';
+        statusElement.title = error.message;
+        errors++;
+        remaining--;
+        processedCount++;
+        updateStats();
+        return null;
+      }
+    }
+
+    async function processGames(games, maxConcurrent) {
+      const processedGames = [];
+      let currentIndex = 0;
+
+      async function processBatch() {
+        const batch = [];
+        while (currentIndex < games.length && batch.length < maxConcurrent && !cancelRequested) {
+          batch.push(processGame(games[currentIndex], currentIndex, games.length));
+          currentIndex++;
+          activeRequests++;
+          await new Promise(resolve => setTimeout(resolve, 200));
+        }
+
+        const results = await Promise.all(batch);
+        activeRequests -= batch.length;
+        processedGames.push(...results.filter(Boolean));
+        updateProgressBar(processedGames.length + errors, games.length);
+
+        if (currentIndex < games.length && !cancelRequested) {
+          await processBatch();
+        }
+      }
+
+      await processBatch();
+      return processedGames;
+    }
+
+    function formatDate(dateStr) {
+      let parts = dateStr.split(" ");
+      return parts.length >= 2 ? `${parts[0]}T${parts[1]}.000Z`: "";
+    }
+
+    function htmlToMarkdown(html) {
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(html, "text/html");
+
+      function processNode(node) {
+        if (node.nodeType === Node.TEXT_NODE) return node.textContent.replace(/\u00A0/g, " ");
+        if (node.nodeType !== Node.ELEMENT_NODE) return "";
+
+        function fixSpacing(text, wrapper) {
+          text = text.replace(/\u00A0/g, " ").trim();
+          return text.replace(/^\s*(.*?)\s*$/, (_, content) => ` ${wrapper}${content}${wrapper} `).trim();
+        }
+
+        switch (node.tagName.toLowerCase()) {
+          case "h1": return `# ${node.textContent.trim()}\n`;
+            case "h2": return `## ${node.textContent.trim()}\n`;
+              case "h3": return `### ${node.textContent.trim()}\n`;
+                case "h4": case "h5": case "h6": return `### ${node.textContent.trim()}\n`;
+                  case "b": case "strong": return fixSpacing(processChildren(node), "**");
+                    case "i": case "em": return fixSpacing(processChildren(node), "_");
+                      case "u": return fixSpacing(processChildren(node), "__");
+                        case "a": return `[${processChildren(node).trim()}](${encodeURIComponent(node.getAttribute("href"))})`;
+                          case "img": return `![${node.getAttribute("alt") || ""}](${encodeURIComponent(node.getAttribute("src"))})`;
+                            case "br": return "\n";
+                              case "p": return `${processChildren(node)}\n`;
+                                case "blockquote": return `> ${processChildren(node)}`;
+                                  case "code": return `\`${processChildren(node).trim()}\``;
+                                    case "pre": return `\`\`\`\n${processChildren(node).trim()}\n\`\`\``;
+                                      case "ul": return processChildren(node, "- ");
+                                        case "ol": return processChildren(node, null, true);
+                                          case "li": return `${processChildren(node)}\n`;
+                                            default: return processChildren(node);
+                                            }
+                                        }
+
+                                        function processChildren(node, prefix = "", ordered = false) {
+                                          return Array.from(node.childNodes)
+                                          .map((child, i) => {
+                                            let content = processNode(child);
+                                            if (ordered && child.tagName?.toLowerCase() === "li") content = `${i + 1}. ${content}`;
+                                            else if (prefix && child.tagName?.toLowerCase() === "li") content = `${prefix}${content}`;
+                                            return content;
+                                          })
+                                          .join("");
+                                      }
+
+                                      return processChildren(doc.body)
+                                      .split("\n")
+                                      .map(line => line.trim())
+                                      .filter(line => line.length > 0).join("\n");
+                                  }
+                                </script>
+                              </body>
+                            </html>
