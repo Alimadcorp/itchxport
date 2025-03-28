@@ -207,7 +207,7 @@
         <label for="apiKey">Enter URL or API key:</label>
         <input type="text" id="apiKey" placeholder="Enter your itch.io API key">
         <div class="help-text">
-          Enter homepage URL (leafo.itch.io) or game URLs or your itch.io API key.
+          Enter homepage URL (leafo.itch.io) or game URLs or your <a href="https://itch.io/user/settings/api-keys">itch.io API key</a>.
         </div>
       </div>
 
@@ -249,7 +249,7 @@
     <details>
       <summary>About & Data Format</summary>
       <p>
-        This tool exports your Itch.io games with full metadata including descriptions, screenshots and videos.
+        This tool exports your Itch.io games with full metadata including descriptions, screenshots and videos. Works better if you use an API key.
       </p>
       <p>
         Each game includes:
@@ -265,16 +265,35 @@
         Example game format:
       </p>
       <pre>{
-        "title": "Game Title",
-        "url": "https://game.itch.io",
-        "cover_url": "https://image.url",
-        "description": "Markdown formatted description",
-        "screenshots": ["url1", "url2"],
-        "videos": [{"url": "youtube.com/embed/id", "thumb": "thumbnail.jpg"}],
-        "platforms": [{"name": "Windows", "url": "download.url"}],
-        "released": "YYYY-MM-DDTHH:MM:SS.000Z",
-        "updated": "YYYY-MM-DDTHH:MM:SS.000Z"
-        }</pre>
+[
+  {
+    "title": "Please Suggest A Name by Alimad-co, F1nndegamer, alichan205",
+    "url": "https://alimad.itch.io/wmj24",
+    "id": "G100",
+    "pid": "G0000",
+    "description": "# Please Suggest A Name\n### There has been a major update! Check it out!\nBy **Alimad Interactive Entertainment**and **F1nndegamer**\n### Theme Implementation\n'Please Suggest A Name' is a puzzle game in which you use magnets to move a magnet to a desired location. You can switch the poles of your magnet, and you always have to consider polarity.\n### Assets Used\nUsed UI **soft mask**, a unity asset by  Mob-Sakai\n### Team\n**Alimad Co / Mr Bruh** : Programmer + Art + UI/UX\n**F1nndegamer**: Programmer + Level Design\n**Alicia**: Music + SFX\n### Known Bugs in Jam Version\nSorry, there are still some **bugs**in the game. Here is a list of them all and how to fix them\n1. If the magnets don't place/are big, **reload the level.** If there is any other problem,**reload the level.**\n## Leaderboard\nhttps://alimadcorp.github.io/danfetchv1\n## Results\nhttps://alimadcorp.github.io/jamresult\n## Trailer\n## Walkthrough\n## Environment\nMade with [Unity 6000.0.27f1](https%3A%2F%2Funity.com%2Freleases%2Feditor%2Fwhats-new%2F6000.0.27%23notes)\nSprites made with [InkScape](https%3A%2F%2Finkscape.org%2F)\nCoded in [Visual Studio Code](https%3A%2F%2Fcode.visualstudio.com%2F)\n## Clicky Stuff\n**[YouTube](https%3A%2F%2Fyoutube.com%2F%40alimadco)**\n**[Alimad: Itch.io](https%3A%2F%2Falimad.itch.io%2F)**\n****[**F1nndegamer: Itch.io**](https%3A%2F%2Ff1nndegamer.itch.io%2F)\n[Alicia: Bandicamp](https%3A%2F%2Faliciasj.bandcamp.com%2F)\n[Discord Community](https%3A%2F%2Fdiscord.com%2Finvite%2FfY4Q8rKsz4)\n**alimad.co.ltd@gmail.com**\n**Discord** - Mr Bruh#9871",
+    "videos": [
+      {
+        "url": "https://www.youtube.com/embed/-XwUlyAUWMk",
+        "thumb": "https://img.youtube.com/vi/-XwUlyAUWMk/maxresdefault.jpg"
+      }
+    ],
+    "screenshots": [
+      "https://img.itch.zone/aW1hZ2UvMzIwOTY5MS8xOTIwNDg1NS5wbmc=/original/B7wN%2BD.png",
+      "https://img.itch.zone/aW1hZ2UvMzIwOTY5MS8xOTIwNDg1NC5wbmc=/original/baRwou.png",
+      "https://img.itch.zone/aW1hZ2UvMzIwOTY5MS8xOTIwNDg1Mi5wbmc=/original/vQWHYu.png",
+      "https://img.itch.zone/aW1hZ2UvMzIwOTY5MS8xOTIwNDg1My5wbmc=/original/bDVign.png",
+      "https://img.itch.zone/aW1hZ2UvMzIwOTY5MS8xOTIwNDg1MS5wbmc=/original/7Qj0u1.png",
+      "https://img.itch.zone/aW1hZ2UvMzIwOTY5MS8xOTIwNDg0OS5qcGc=/original/D09M1Q.jpg"
+    ],
+    "platforms": [
+      {
+        "url": "https://alimad.itch.io/wmj24"
+      }
+    ]
+  }
+]
+        </pre>
       <p>
         Made by Alimad Corporations
       </p>
@@ -535,14 +554,6 @@
       input = input.trim();
       if (!input) return [];
       input = input.replace(/^https?:\/\//, '');
-      if (input.includes('/')) {
-        const gameSlug = input.split('/')[1];
-        const username = input.split('/')[0];
-        return [{
-          title: gameSlug,
-          url: `https://${username}.itch.io/${gameSlug}`
-        }];
-      }
       if (input.includes(',')) {
         const username = input.split('.itch.io')[0] || 'leafo';
         const slugs = input.includes('itch.io/') ?
@@ -553,6 +564,14 @@
           title: slug.trim(),
           url: `https://${username}.itch.io/${slug.trim()}`
         }));
+      }
+      if (input.includes('/')) {
+        const gameSlug = input.split('/')[1];
+        const username = input.split('/')[0];
+        return [{
+          title: gameSlug,
+          url: `https://${username}.itch.io/${gameSlug}`
+        }];
       }
       try {
         const response = await fetch(`https://madfetch.vercel.app/html/${input}`);
